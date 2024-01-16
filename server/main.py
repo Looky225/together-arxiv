@@ -7,6 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 import arxiv
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from tempfile import NamedTemporaryFile
+import aiofiles 
 
 from models.api import (
     DeleteRequest,
@@ -80,19 +83,33 @@ async def upsert_file(
             if metadata
             else DocumentMetadata(source=Source.file)
         )
-    except:
-        metadata_obj = DocumentMetadata(source=Source.file)
+    except Exception as e:  # always capture the exception
+        logger.error(e)
+        return JSONResponse(status_code=400, content={"detail": str(e)})
     
     logger.info(f"Received file type: {type(file)}")  # Debugging line
 
-    document = await get_document_from_file(file, metadata_obj)
+    # Use NamedTemporaryFile for safer handling
+    temporary_file = NamedTemporaryFile(delete=False)  # delete=False is required to prevent auto-deletion
+    async with aiofiles.open(temporary_file.name, 'wb') as out_file:
+        while content := await file.read(8192):
+            await out_file.write(content)
+    
+    # After saving, the cursor will be at the end of the file, reset it
+    await file.seek(0)
 
+    # Pass the temporary file path to the get_document_from_file function
     try:
+        document = await get_document_from_file(temporary_file.name, metadata_obj)
         ids = await datastore.upsert([document])
         return UpsertResponse(ids=ids)
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=f"str({e})")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Close and remove the temporary file
+        temporary_file.close()
+        os.unlink(temporary_file.name)
 
 @app.post(
     "/download-and-upsert-arxiv",
