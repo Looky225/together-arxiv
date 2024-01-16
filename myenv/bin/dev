@@ -1,0 +1,6 @@
+#!/Users/looky/Documents/pythonProjects/llamaindex-retrieval-plugin/myenv/bin/python
+import sys
+from local_server.main import start
+
+if __name__ == '__main__':
+    sys.exit(start())

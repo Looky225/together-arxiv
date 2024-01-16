@@ -1,0 +1,22 @@
+services:
+  # FastAPI Server
+  - type: web
+    name: retrieval-plugin-server 
+    region: oregon
+    plan: starter
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars: 
+      - key: DATASTORE
+        value: weaviate
+      - key: BEARER_TOKEN
+        generateValue: true
+        
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: WEAVIATE_URL
+        value: https://arxiv-datastore-ytnq8ece.weaviate.network
+      - key: WEAVIATE_API_KEY
+        value: 6y7cLUQF07VjXFM3i5kub28lWZZUQAt0bQYp
+      - key: WEAVIATE_PORT
+        value: 443 # Utilisez 443 pour HTTPS
