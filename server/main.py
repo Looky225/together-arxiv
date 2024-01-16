@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 import arxiv
+from fastapi.middleware.cors import CORSMiddleware
 
 from models.api import (
     DeleteRequest,
@@ -44,6 +45,18 @@ sub_app = FastAPI(
 )
 app.mount("/sub", sub_app)
 
+origins = [
+    "https://editor.swagger.io/",
+    "https://chat.openai.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post(
     "/upsert-file",
