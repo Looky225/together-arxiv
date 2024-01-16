@@ -94,9 +94,13 @@ async def upsert_file(
     async with aiofiles.open(temporary_file.name, 'wb') as out_file:
         while content := await file.read(8192):
             await out_file.write(content)
-    
+
     # After saving, the cursor will be at the end of the file, reset it
     await file.seek(0)
+
+    # Print the content of the file for debugging purposes
+    print("File content:")
+    print(await file.read())
 
     # Pass the temporary file path to the get_document_from_file function
     try:
