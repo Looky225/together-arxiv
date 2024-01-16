@@ -86,6 +86,7 @@ weaviate-client = "3.26.0"
 wrapt = "1.16.0"
 xlsxwriter = "3.1.9"
 yarl = "1.9.4"
+python-magic = "^0.4.27"
 
 [tool.poetry.scripts]
 start = "server.main:start"

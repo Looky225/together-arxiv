@@ -1,5 +1,6 @@
 import os
 from io import BufferedReader
+from pathlib import Path
 from typing import Optional
 from fastapi import UploadFile
 import mimetypes
@@ -9,25 +10,21 @@ import csv
 import pptx
 from loguru import logger
 from typing import Union
+import tempfile
+import magic
 
 from models.models import Document, DocumentMetadata
 
 
 async def get_document_from_file(
-    file_or_str: Union[UploadFile, str], metadata: DocumentMetadata
+    file: Union[UploadFile, str], metadata: DocumentMetadata
 ) -> Document:
-    if isinstance(file_or_str, str):
-        # Traitez le cas où file_or_str est une chaîne de caractères (str)
-        # Par exemple, ouvrez le fichier avec cette chaîne de caractères comme chemin d'accès.
-        # Extraire le texte comme vous le feriez pour un fichier réel.
-        extracted_text = extract_text_from_filepath(file_or_str)
-    elif isinstance(file_or_str, UploadFile):
-        # Traitez le cas où file_or_str est un objet UploadFile valide
-        # Utilisez votre logique actuelle pour extraire le texte du fichier UploadFile
-        mimetype = file_or_str.content_type
-        extracted_text = await extract_text_from_form_file(file_or_str)
-    else:
-        raise ValueError("Le type de fichier n'est pas pris en charge.")
+    if isinstance(file, UploadFile):
+        extracted_text = await extract_text_from_form_file(file)
+    elif isinstance(file, str) and Path(file).is_file():
+        # When file_or_path is a filepath (string)
+        extracted_text = extract_text_from_filepath(file)
+    
 
     doc = Document(text=extracted_text, metadata=metadata)
 
@@ -100,14 +97,15 @@ def extract_text_from_file(file: BufferedReader, mimetype: str) -> str:
 # Extracte le texte d'un fichier en fonction de son type MIME
 async def extract_text_from_form_file(file: UploadFile):
     """Renvoie le contenu textuel d'un fichier."""
-    # Obtient le type MIME du fichier à partir de l'objet UploadFile
-    mimetype = file.content_type
-    logger.info(f"mimetype: {mimetype}")
+    # Use python-magic to identify the file MIME type from its content
+    # Read the file stream from the UploadFile object
+    file_stream = await file.read()
+    # Use the file_stream buffer for python-magic detection, not the UploadFile object
+    mime_type = magic.from_buffer(file_stream, mime=True)
+    logger.info(f"Identified MIME type using python-magic: {mime_type}")
     logger.info(f"file.file: {file.file}")
     logger.info("file: ", file)
-
-    # Lit le corps du fichier à partir de l'objet UploadFile
-    file_stream = await file.read()
+    await file.seek(0)
 
     # Définit un chemin de fichier temporaire
     temp_file_path = "/tmp/temp_file"
@@ -118,7 +116,7 @@ async def extract_text_from_form_file(file: UploadFile):
 
     try:
         # Extrait le texte en utilisant la fonction extract_text_from_filepath
-        extracted_text = extract_text_from_filepath(temp_file_path, mimetype)
+        extracted_text = extract_text_from_filepath(temp_file_path, mime_type)
     except Exception as e:
         logger.error(e)
         os.remove(temp_file_path)
