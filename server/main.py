@@ -35,6 +35,23 @@ def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sc
 app = FastAPI(dependencies=[Depends(validate_token)])
 # app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
 
+# Set CORS middleware
+origins = [
+    "https://editor.swagger.io",
+    "https://chat.openai.com",
+    ["*"]
+    # add any other origins that you want to allow,
+    # or use ["*"] to allow all origins in development
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Specific allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Create a sub-application, in order to access just the query endpoint in an OpenAPI schema, found at http://0.0.0.0:8000/sub/openapi.json when the app is running locally
 sub_app = FastAPI(
     title="Retrieval Plugin API",
@@ -45,18 +62,9 @@ sub_app = FastAPI(
 )
 app.mount("/sub", sub_app)
 
-origins = [
-    "https://editor.swagger.io/",
-    "https://chat.openai.com"
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+
 
 @app.post(
     "/upsert-file",
