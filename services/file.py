@@ -12,6 +12,7 @@ from loguru import logger
 from typing import Union
 import tempfile
 import magic
+from fastapi import HTTPException 
 
 from models.models import Document, DocumentMetadata
 
@@ -19,12 +20,13 @@ from models.models import Document, DocumentMetadata
 async def get_document_from_file(
     file: Union[UploadFile, str], metadata: DocumentMetadata
 ) -> Document:
+    extracted_text = ""
     if isinstance(file, UploadFile):
         extracted_text = await extract_text_from_form_file(file)
     elif isinstance(file, str) and Path(file).is_file():
         # When file_or_path is a filepath (string)
         extracted_text = extract_text_from_filepath(file)
-    
+        
 
     doc = Document(text=extracted_text, metadata=metadata)
 
