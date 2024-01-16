@@ -26,7 +26,7 @@ async def get_document_from_file(
     elif isinstance(file, str) and Path(file).is_file():
         # When file_or_path is a filepath (string)
         extracted_text = extract_text_from_filepath(file)
-        
+
 
     doc = Document(text=extracted_text, metadata=metadata)
 
@@ -53,6 +53,8 @@ def extract_text_from_filepath(filepath: str, mimetype: Optional[str] = None) ->
         logger.error(e)
         raise e
 
+    logger.info(f"Extracted text length: {len(extracted_text)}")
+    
     return extracted_text
 
 def extract_text_from_file(file: BufferedReader, mimetype: str) -> str:
@@ -94,6 +96,8 @@ def extract_text_from_file(file: BufferedReader, mimetype: str) -> str:
         # Type de fichier non pris en charge
         raise ValueError("Type de fichier non pris en charge : {}".format(mimetype))
 
+    logger.info(f"Extracted text length: {len(extracted_text)}")
+
     return extracted_text
 
 # Extracte le texte d'un fichier en fonction de son type MIME
@@ -126,5 +130,7 @@ async def extract_text_from_form_file(file: UploadFile):
 
     # Supprime le fichier de l'emplacement temporaire
     os.remove(temp_file_path)
+
+    logger.info(f"Extracted text length: {len(extracted_text)}")
 
     return extracted_text
