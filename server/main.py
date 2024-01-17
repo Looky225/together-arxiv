@@ -106,14 +106,17 @@ async def upsert_file(
     try:
         document = await get_document_from_file(temporary_file.name, metadata_obj)
         ids = await datastore.upsert([document])
+        print("Document upserted with IDs:", ids)
         return UpsertResponse(ids=ids)
     except Exception as e:
         logger.error(e)
+        print("Error upserting document:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Close and remove the temporary file
+       # Close and remove the temporary file
         temporary_file.close()
         os.unlink(temporary_file.name)
+
 
 @app.post(
     "/download-and-upsert-arxiv",
