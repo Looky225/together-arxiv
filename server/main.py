@@ -90,13 +90,16 @@ async def upsert_file(
     with open("uploaded_file.pdf", "wb") as f:
         while content := await file.read(8192):
             f.write(content)
+
+    # Reset the file pointer before reading again
+    await file.seek(0)
+
+    # Read and print the content for debugging
+    file_content = await file.read()
+    logger.info("UploadFile Content:")
+    logger.info(file_content)  # Log the raw binary content
+    print(file_content)
     try:
-        # Temporary: Read and print the content for debugging
-        file_content = await file.read()  # Read the file content
-        logger.info("UploadFile Content:")
-        logger.info(file_content)  # Log the raw binary content
-        print(file_content)
-        await file.seek(0)  # Reset the file pointer after reading
 
         logger.info("Attempting to extract text from file")
         document = await get_document_from_file(file, metadata_obj)
