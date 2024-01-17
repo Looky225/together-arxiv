@@ -95,8 +95,20 @@ async def upsert_file(
         print(file_content)
         await file.seek(0)  # Reset the file pointer after reading
 
+        logger.info("Attempting to extract text from file")
         document = await get_document_from_file(file, metadata_obj)
+        
+        logger.info(f"Extracted text length: {len(document.text)}")
+        logger.info("Attempting to upsert document")
+        
         ids = await datastore.upsert([document])
+
+        logger.info(f"Upserted document IDs: {ids}")
+        return UpsertResponse(ids=ids)
+
+    except Exception as e:
+        logger.error(f"Error during upsert operation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
         return UpsertResponse(ids=ids)
 

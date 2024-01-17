@@ -1,3 +1,4 @@
+import io
 import os
 from io import BufferedReader
 from pathlib import Path
@@ -22,7 +23,9 @@ async def get_document_from_file(
 ) -> Document:
     extracted_text = ""
     if isinstance(file, UploadFile):
-        extracted_text = await extract_text_from_form_file(file)
+        file_content = await file.read()
+        file = io.BytesIO(file_content)
+        extracted_text = extract_text_from_file(file, file.content_type)
     elif isinstance(file, str) and Path(file).is_file():
         # When file_or_path is a filepath (string)
         extracted_text = extract_text_from_filepath(file)
