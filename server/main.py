@@ -86,11 +86,18 @@ async def upsert_file(
     except:
         metadata_obj = DocumentMetadata(source=Source.file)
 
-    document = await get_document_from_file(file, metadata_obj)
+    
     try:
+        # Temporary: Read and print the content for debugging
+        file_content = await file.read()  # Read the file content
+        logger.info("UploadFile Content:")
+        logger.info(file_content)  # Log the raw binary content
+        print(file_content)
+        await file.seek(0)  # Reset the file pointer after reading
 
+        document = await get_document_from_file(file, metadata_obj)
         ids = await datastore.upsert([document])
-        
+
         return UpsertResponse(ids=ids)
 
     except Exception as e:
