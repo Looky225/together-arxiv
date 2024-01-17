@@ -99,7 +99,7 @@ async def upsert_file(
             logger.info(f"Saved file to temporary file: {tmp.name}")
 
         logger.info("Attempting to extract text from file")
-        document = await get_document_from_file(file, metadata_obj)
+        document = await get_document_from_file(out_file, metadata_obj)
         
         logger.info(f"Extracted text length: {len(document.text)}")
         logger.info("Attempting to upsert document")
