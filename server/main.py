@@ -86,7 +86,10 @@ async def upsert_file(
     except:
         metadata_obj = DocumentMetadata(source=Source.file)
 
-    
+    # Save the uploaded file to a local file
+    with open("uploaded_file.pdf", "wb") as f:
+        while content := await file.read(8192):
+            f.write(content)
     try:
         # Temporary: Read and print the content for debugging
         file_content = await file.read()  # Read the file content
@@ -110,11 +113,6 @@ async def upsert_file(
         logger.error(f"Error during upsert operation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-        return UpsertResponse(ids=ids)
-
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(status_code=500, detail=f"str({e})")
 
 
 @app.post(
@@ -143,6 +141,7 @@ async def download_and_upsert_arxiv(
             )
         except:
             metadata_obj = DocumentMetadata(source=Source.file)
+        
 
         # Utilisez la fonction my_get_document_from_file pour obtenir un objet Document à partir du fichier téléchargé
         document = await get_document_from_file(pdf_filename, metadata_obj)

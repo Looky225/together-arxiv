@@ -14,6 +14,7 @@ from typing import Union
 import tempfile
 import magic
 from fastapi import HTTPException 
+import tempfile
 
 from models.models import Document, DocumentMetadata
 
