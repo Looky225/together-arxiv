@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from tempfile import NamedTemporaryFile
 import aiofiles 
+import tempfile
 
 from models.api import (
     DeleteRequest,
@@ -86,20 +87,16 @@ async def upsert_file(
     except:
         metadata_obj = DocumentMetadata(source=Source.file)
 
-    # Save the uploaded file to a local file
-    with open("uploaded_file.pdf", "wb") as f:
-        while content := await file.read(8192):
-            f.write(content)
-
-    # Reset the file pointer before reading again
-    await file.seek(0)
-
-    # Read and print the content for debugging
-    file_content = await file.read()
-    logger.info("UploadFile Content:")
-    logger.info(file_content)  # Log the raw binary content
-    print(file_content)
     try:
+        # Use a named temporary file to prevent overwriting potential existing files
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            async with aiofiles.open(tmp.name, 'wb') as out_file:
+                content = await file.read()  # Read the file content
+                await out_file.write(content)
+            await file.seek(0)  # Reset the file pointer for future reads if necessary
+            logger.info("UploadFile Content:")
+            logger.info(out_file)
+            logger.info(f"Saved file to temporary file: {tmp.name}")
 
         logger.info("Attempting to extract text from file")
         document = await get_document_from_file(file, metadata_obj)
