@@ -142,10 +142,18 @@ async def scrape_url(session: httpx.AsyncClient, url: str) -> str:
 
 @app.post("/extract-text-and-create-pdf", response_model=UpsertResponse)
 async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None)):
-    # Asynchronously fetch all URLs concurrently
-    async with httpx.AsyncClient() as client:
-        tasks = (scrape_url(client, url) for url in urls)
-        texts = await asyncio.gather(*tasks)
+    texts = []
+    async with httpx.AsyncClient() as session:
+        for url in urls:
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                response = await session.get(url, headers=headers)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
+                texts.append(soup.get_text(strip=True))
+            except httpx.HTTPError as e:
+                print(f"Error scraping {url}: {e}")
+                texts.append("")  # Append empty string in case of failure
 
     valid_texts = [text for text in texts if text]
     
