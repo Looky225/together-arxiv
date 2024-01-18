@@ -2,7 +2,7 @@ import asyncio
 import os
 from typing import Optional
 import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, Depends, Body, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Depends, Body, UploadFile, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
@@ -141,7 +141,9 @@ async def scrape_url(session: httpx.AsyncClient, url: str) -> str:
         return ""  # Return an empty string rather than None for consistency
 
 @app.post("/extract-text-and-create-pdf", response_model=UpsertResponse)
-async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None)):
+async def extract_text_and_create_pdf(urls: Optional[List[str]] = Query(None), metadata: str = Form(None)):
+    if not urls:
+        urls = []  # Ensure urls is always a list
     print(f"Received URLs: {urls}")
     texts = []
     async with httpx.AsyncClient() as session:
