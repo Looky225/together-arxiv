@@ -16,9 +16,9 @@ RUN apt-get update -y \
         xfonts-base \
         wget \
         fontconfig \
-        libjpeg-turbo8 \
-        xz-utils 
-    
+        libjpeg62-turbo \
+        xz-utils
+
 RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
     && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
     && apt-get install -f
