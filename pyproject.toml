@@ -89,6 +89,7 @@ yarl = "1.9.4"
 python-magic = "^0.4.27"
 aiofiles = "^23.2.1"
 reportlab = "^4.0.9"
+asyncio = "^3.4.3"
 
 [tool.poetry.scripts]
 start = "server.main:start"

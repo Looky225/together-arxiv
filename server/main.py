@@ -20,6 +20,7 @@ from reportlab.platypus import SimpleDocTemplate,Paragraph
 from reportlab.lib.pagesizes import letter
 import concurrent.futures
 from typing import List
+import httpx
 
 from models.api import (
     DeleteRequest,
@@ -123,16 +124,16 @@ async def upsert_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def scrape_url(url):
+async def scrape_url(session, url):
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers)
+        response = await session.get(url, headers=headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         return soup.get_text()
-    except requests.exceptions.RequestException as e:
+    except httpx.HTTPError as e:
         print(f"Error scraping {url}: {e}")
-        return ""
+        return None  # Return None for a failed request
 
 @app.post("/extract-text-and-create-pdf", response_model=UpsertResponse)
 async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None)):
@@ -141,6 +142,7 @@ async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None
         texts = list(executor.map(scrape_url, urls))
 
     valid_texts = [text for text in texts if text]
+    
 
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
