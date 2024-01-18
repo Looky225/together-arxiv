@@ -141,6 +141,8 @@ async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None
     try:
         pdf_filename = "output.pdf"
         c = canvas.Canvas(pdf_filename)
+
+        full_text = ""  # Initialize full_text before the loop
         
         textobject = c.beginText()
         textobject.setTextOrigin(10, 730)
@@ -158,6 +160,13 @@ async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None
         
         c.drawText(textobject)
         c.save()
+
+        # Print a confirmation that the file was created
+        print(f"PDF file {pdf_filename} created successfully.")  # Or use logging.info()
+
+        # Print the first 100 characters of the combined text content
+        preview_text = full_text[:100]
+        print(f"Content preview (first 100 chars): {preview_text}")  # Or use 
 
         # Process metadata and document as before
         try:
