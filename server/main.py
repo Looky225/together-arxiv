@@ -11,6 +11,11 @@ from fastapi.responses import JSONResponse
 from tempfile import NamedTemporaryFile
 import aiofiles 
 import tempfile
+import requests
+from bs4 import BeautifulSoup
+import pdfkit
+import concurrent.futures
+from typing import List
 
 from models.api import (
     DeleteRequest,
@@ -114,6 +119,49 @@ async def upsert_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def scrape_url(url):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.get_text()
+    except requests.exceptions.RequestException as e:
+        print(f"Error scraping {url}: {e}")
+        return ""
+
+@app.post("/extract-text-and-create-pdf", response_model=UpsertResponse)
+async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None)):
+    # Use ThreadPoolExecutor to scrape URLs concurrently
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        texts = list(executor.map(scrape_url, urls))
+
+    valid_texts = [text for text in texts if text]
+
+    try:
+        pdf_filename = "output.pdf"
+        pdfkit.from_string('\n'.join(valid_texts), pdf_filename)
+
+        # Process metadata and document as before
+        try:
+            metadata_obj = (
+                DocumentMetadata.parse_raw(metadata)
+                if metadata
+                else DocumentMetadata(source=Source.file)
+            )
+        except:
+            metadata_obj = DocumentMetadata(source=Source.file)
+
+        # Assuming you have a similar function for handling files
+        document = await get_document_from_file(pdf_filename, metadata_obj)
+
+        ids = await datastore.upsert([document])
+
+        return UpsertResponse(ids=ids)
+
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post(
     "/download-and-upsert-arxiv",
