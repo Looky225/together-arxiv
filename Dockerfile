@@ -14,10 +14,13 @@ RUN apt-get update -y \
         libxext6 \
         xfonts-75dpi \
         xfonts-base \
-        wget
-
-RUN wget https://downloads.wkhtmltopdf.org/0.12/0.12.5/wkhtmltox_0.12.5-1.buster_amd64.deb \
-    && dpkg -i wkhtmltox_0.12.5-1.buster_amd64.deb \
+        wget \
+        fontconfig \
+        libjpeg-turbo8 \
+        xz-utils 
+    
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+    && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
     && apt-get install -f
 
 RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
