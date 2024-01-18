@@ -13,7 +13,7 @@ import aiofiles
 import tempfile
 import requests
 from bs4 import BeautifulSoup
-import pdfkit
+from reportlab.pdfgen import canvas
 import concurrent.futures
 from typing import List
 
@@ -140,7 +140,24 @@ async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None
 
     try:
         pdf_filename = "output.pdf"
-        pdfkit.from_string('\n'.join(valid_texts), pdf_filename)
+        c = canvas.Canvas(pdf_filename)
+        
+        textobject = c.beginText()
+        textobject.setTextOrigin(10, 730)
+        textobject.setFont("Helvetica", 12)
+        
+        for text in valid_texts:
+            lines = text.split('\n')
+            for line in lines:
+                textobject.textLine(line)
+                
+            # Add some space between the texts of different URLs
+            textobject.textLine('')
+            textobject.textLine('---------')
+            textobject.textLine('')
+        
+        c.drawText(textobject)
+        c.save()
 
         # Process metadata and document as before
         try:

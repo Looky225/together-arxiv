@@ -7,21 +7,6 @@ RUN pip install poetry
 
 COPY ./pyproject.toml ./poetry.lock* /tmp/
 
-# Install wkhtmltopdf
-RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends \
-        libxrender1 \
-        libxext6 \
-        xfonts-75dpi \
-        xfonts-base \
-        wget \
-        fontconfig \
-        libjpeg62-turbo \
-        xz-utils
-
-RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
-    && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
-    && apt-get install -f
 
 RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
 
