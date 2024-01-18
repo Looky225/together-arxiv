@@ -142,6 +142,7 @@ async def scrape_url(session: httpx.AsyncClient, url: str) -> str:
 
 @app.post("/extract-text-and-create-pdf", response_model=UpsertResponse)
 async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None)):
+    print(f"Received URLs: {urls}")
     texts = []
     async with httpx.AsyncClient() as session:
         for url in urls:
@@ -155,13 +156,14 @@ async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None
                 print(f"Error scraping {url}: {e}")
                 texts.append("")  # Append empty string in case of failure
 
+    pdf_filename = "output.pdf"
+
     valid_texts = [text for text in texts if text]
     
 
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
 
-    pdf_filename = "output.pdf"
     doc = SimpleDocTemplate(
         pdf_filename,
         pagesize=letter,
