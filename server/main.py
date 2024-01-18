@@ -14,6 +14,10 @@ import tempfile
 import requests
 from bs4 import BeautifulSoup
 from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate,Paragraph
+from reportlab.lib.pagesizes import letter
 import concurrent.futures
 from typing import List
 
@@ -138,56 +142,49 @@ async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None
 
     valid_texts = [text for text in texts if text]
 
+    styles = getSampleStyleSheet()
+    styleN = styles['Normal']
+
+    pdf_filename = "output.pdf"
+    doc = SimpleDocTemplate(
+        pdf_filename,
+        pagesize=letter,
+        bottomMargin=.4 * inch,
+        topMargin=.6 * inch,
+        rightMargin=.8 * inch,
+        leftMargin=.8 * inch
+    )
+
+    story = []
+    for text in valid_texts:
+        P = Paragraph(text, styleN)
+        story.append(P)
+
+    doc.build(story)
+
+    # Logging for confirmation and preview of created PDF content
+    print(f"PDF file {pdf_filename} created successfully.")  # Or use logging.info()
+    preview_text = '\n\n---------\n\n'.join(valid_texts)[:100] + '...' if len(valid_texts) > 100 else ''
+    print(f"Content preview: {preview_text}")  # Or use logging.info()
+
+    # Process metadata and document as before
     try:
-        pdf_filename = "output.pdf"
-        c = canvas.Canvas(pdf_filename)
+        metadata_obj = (
+            DocumentMetadata.parse_raw(metadata)
+            if metadata
+            else DocumentMetadata(source=Source.file)
+        )
+    except:
+        metadata_obj = DocumentMetadata(source=Source.file)
 
-        full_text = ""  # Initialize full_text before the loop
-        
-        textobject = c.beginText()
-        textobject.setTextOrigin(10, 730)
-        textobject.setFont("Helvetica", 12)
-        
-        for text in valid_texts:
-            lines = text.split('\n')
-            for line in lines:
-                textobject.textLine(line)
-                
-            # Add some space between the texts of different URLs
-            textobject.textLine('')
-            textobject.textLine('---------')
-            textobject.textLine('')
-        
-        c.drawText(textobject)
-        c.save()
+    # Assuming you have a similar function for handling files
+    document = await get_document_from_file(pdf_filename, metadata_obj)
 
-        # Print a confirmation that the file was created
-        print(f"PDF file {pdf_filename} created successfully.")  # Or use logging.info()
+    ids = await datastore.upsert([document])
 
-        # Print the first 100 characters of the combined text content
-        preview_text = full_text[:100]
-        print(f"Content preview (first 100 chars): {preview_text}")  # Or use 
+    return UpsertResponse(ids=ids)
 
-        # Process metadata and document as before
-        try:
-            metadata_obj = (
-                DocumentMetadata.parse_raw(metadata)
-                if metadata
-                else DocumentMetadata(source=Source.file)
-            )
-        except:
-            metadata_obj = DocumentMetadata(source=Source.file)
-
-        # Assuming you have a similar function for handling files
-        document = await get_document_from_file(pdf_filename, metadata_obj)
-
-        ids = await datastore.upsert([document])
-
-        return UpsertResponse(ids=ids)
-
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(status_code=500, detail=str(e))
+    
 
 @app.post(
     "/download-and-upsert-arxiv",
