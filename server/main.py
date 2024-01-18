@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Optional
 import uvicorn
@@ -124,22 +125,27 @@ async def upsert_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def scrape_url(session, url):
+async def scrape_url(session: httpx.AsyncClient, url: str) -> str:
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
+        # Note the use of 'await' here since httpx is async
         response = await session.get(url, headers=headers)
+        # The raise_for_status will raise an HTTPError if the request returned an HTTP error
         response.raise_for_status()
+        # Parse the page with BeautifulSoup once you have the content
         soup = BeautifulSoup(response.text, 'html.parser')
-        return soup.get_text()
+        # Return the text content of the parsed HTML
+        return soup.get_text(strip=True)  # You can use strip=True to remove extra whitespace
     except httpx.HTTPError as e:
         print(f"Error scraping {url}: {e}")
-        return None  # Return None for a failed request
+        return ""  # Return an empty string rather than None for consistency
 
 @app.post("/extract-text-and-create-pdf", response_model=UpsertResponse)
 async def extract_text_and_create_pdf(urls: List[str], metadata: str = Form(None)):
-    # Use ThreadPoolExecutor to scrape URLs concurrently
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        texts = list(executor.map(scrape_url, urls))
+    # Asynchronously fetch all URLs concurrently
+    async with httpx.AsyncClient() as client:
+        tasks = (scrape_url(client, url) for url in urls)
+        texts = await asyncio.gather(*tasks)
 
     valid_texts = [text for text in texts if text]
     
