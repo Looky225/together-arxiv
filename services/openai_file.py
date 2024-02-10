@@ -33,11 +33,10 @@ def get_embeddings(texts: List[str]) -> List[List[float]]:
     else:
         response = openai.embeddings.create(input=texts, deployment_id=deployment)
 
-    # Extract the embedding data from the response
-    data = response["data"]  # type: ignore
+    
 
-    # Return the embeddings as a list of lists of floats
-    return [result["embedding"] for result in data]
+    # Extract the embeddings from the response
+    return [response.data[i].embedding for i in range(len(texts))]
 
 
 def get_chat_completion(
