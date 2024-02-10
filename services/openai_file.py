@@ -1,16 +1,17 @@
 from typing import List
-from openai import OpenAI
-from loguru import logger
-import os
 import openai
+import os
+from loguru import logger
 
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-large")
 
 
+@retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(3))
 def get_embeddings(texts: List[str]) -> List[List[float]]:
     """
-    Embed texts using OpenAI's Ada model.
+    Embed texts using OpenAI's ada model.
 
     Args:
         texts: The list of texts to embed.
@@ -21,37 +22,35 @@ def get_embeddings(texts: List[str]) -> List[List[float]]:
     Raises:
         Exception: If the OpenAI API call fails.
     """
-    # Create an instance of the OpenAI client with your API key
-    client = OpenAI(api_key='0c23cf90ee11d82d55c9d5dc390b84b9785d84a1f2f577f348ec35fcf16cbba3', base_url="https://api.together.xyz/v1")
+    # Call the OpenAI API to get the embeddings
+    # NOTE: Azure Open AI requires deployment id
+    deployment = os.environ.get("OPENAI_EMBEDDINGMODEL_DEPLOYMENTID")
 
-    # Define the model name
-    model_name = "togethercomputer/m2-bert-80M-32k-retrieval"
+    response = {}
+    if deployment is None:
+        response = openai.embeddings.create(input=texts, model=EMBEDDING_MODEL)
+    else:
+        response = openai.embeddings.create(input=texts, deployment_id=deployment)
 
-    try:
-        # Make a single call to the OpenAI API for all texts
-        response = client.embeddings.create(
-           input=texts,
-           model=model_name
-       )
-        logger.debug(f"Embedding response: {response}")
+    # Extract the embedding data from the response
+    data = response["data"]  # type: ignore
 
-        # Extract the embeddings from the response
-        return [response.data[i].embedding for i in range(len(texts))]
-    except Exception as e:
-        # Log or handle the exception as needed
-        raise Exception(f"Failed to get embeddings: {str(e)}")
+    # Return the embeddings as a list of lists of floats
+    return [result["embedding"] for result in data]
 
+
+@retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(3))
 def get_chat_completion(
     messages,
-    model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-    api_key='0c23cf90ee11d82d55c9d5dc390b84b9785d84a1f2f577f348ec35fcf16cbba3',
-    base_url="https://api.together.xyz/v1"
+    model="gpt-3.5-turbo",  # use "gpt-4" for better results
+    deployment_id=None,
 ):
     """
     Generate a chat completion using OpenAI's chat completion API.
 
     Args:
         messages: The list of messages in the chat history.
+        model: The name of the model to use for the completion. Default is gpt-3.5-turbo, which is a fast, cheap and versatile model. Use gpt-4 for higher quality but slower results.
 
     Returns:
         A string containing the chat completion.
@@ -59,16 +58,21 @@ def get_chat_completion(
     Raises:
         Exception: If the OpenAI API call fails.
     """
-    # Initialize the OpenAI client with the provided API key and base URL
-    client = openai.OpenAI(api_key=api_key, base_url=base_url)
+    # call the OpenAI chat completion API with the given messages
+    # Note: Azure Open AI requires deployment id
+    response = {}
+    if deployment_id == None:
+        response = openai.chat.completions.create(
+            model=model,
+            messages=messages,
+        )
+    else:
+        response = openai.chat.completions.create(
+            deployment_id=deployment_id,
+            messages=messages,
+        )
 
-    # Call the OpenAI chat completion API with the given messages
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages
-    )
-
-    # Extract the completion from the response
-    completion = response.choices[0].message.content.strip()
+    choices = response["choices"]  # type: ignore
+    completion = choices[0].message.content.strip()
     logger.info(f"Completion: {completion}")
     return completion
