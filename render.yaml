@@ -15,8 +15,8 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: WEAVIATE_URL
-        value: https://arxiv-datastore-ytnq8ece.weaviate.network
+        value: https://arxiv-cluster-q8agrhv1.weaviate.network
       - key: WEAVIATE_API_KEY
-        value: 6y7cLUQF07VjXFM3i5kub28lWZZUQAt0bQYp
+        value: dHMZHQHfzoMRxnzZUjwybfq55BcYdSJyQB93
       - key: WEAVIATE_PORT
         value: 443 # Utilisez 443 pour HTTPS
